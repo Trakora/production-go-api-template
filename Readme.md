@@ -27,7 +27,7 @@ It follows clean-architecture principles, so you can ship fast without sacrifici
 A few months back I wanted to turn everything I’d learned about Go into a real-world app.
 
 **The challenge:** Design a scalable project layout while relying on as few third-party libraries as possible. (That ruled out frameworks like Chi)
-This template is the result—and it’s the codebase I use in the [blog post](https://trakora.de/blog/weg-zu-minimalistischen-http‑apis)
+This template is the result—and it’s the codebase I use in the [blog post](https://trakora.de/blog/weg-zu-minimalistischen-http-apis)
 
 The item management is just an example - you can easily adapt this foundation for any domain-specific API you need to build.
 
