@@ -69,11 +69,11 @@ func main() {
 	done := make(chan struct{})
 
 	go func() {
+		defer close(done)
 		l.Info().Msgf("Starting server %v", s.Addr)
 		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			l.Fatal().Err(err).Msg("Server startup failure")
 		}
-		close(done)
 	}()
 
 	sigChan := make(chan os.Signal, 1)
