@@ -7,12 +7,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
+
 	"production-go-api-template/api/resource"
 	"production-go-api-template/api/router"
 	"production-go-api-template/api/router/middleware"
 	"production-go-api-template/config"
 	"production-go-api-template/pkg/logger"
-	"syscall"
 
 	"github.com/rs/zerolog"
 	"gorm.io/driver/sqlite"
@@ -65,31 +66,32 @@ func main() {
 		IdleTimeout:  c.Server.TimeoutIdle,
 	}
 
-	closed := make(chan struct{})
+	done := make(chan struct{})
 
 	go func() {
-		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
-		<-sigint
-
-		l.Info().Msgf("Shutting down server %v", s.Addr)
-
-		ctx, cancel := context.WithTimeout(context.Background(), c.Server.TimeoutIdle)
-		defer cancel()
-
-		if err := s.Shutdown(ctx); err != nil {
-			l.Error().Err(err).Msg("Server shutdown failure")
+		defer close(done)
+		l.Info().Msgf("Starting server %v", s.Addr)
+		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			l.Fatal().Err(err).Msg("Server startup failure")
 		}
-
-		close(closed)
 	}()
 
-	l.Info().Msgf("Starting server %v", s.Addr)
-	if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		l.Fatal().Err(err).Msg("Server startup failure")
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	<-sigChan
+
+	l.Info().Msgf("Shutting down server %v", s.Addr)
+
+	ctx, cancel := context.WithTimeout(context.Background(), c.Server.TimeoutIdle)
+	defer cancel()
+
+	if err := s.Shutdown(ctx); err != nil {
+		l.Fatal().Err(err).Msg("Server shutdown failure")
 	}
 
-	<-closed
+	<-done
+
 	l.Info().Msgf("Server shutdown successfully")
 }
 
